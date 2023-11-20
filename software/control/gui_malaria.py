@@ -174,7 +174,6 @@ class OctopiGUI(QMainWindow):
         # layout widgets
         layout = QVBoxLayout() #layout = QStackedLayout()
         #layout.addWidget(self.cameraSettingWidget)
-        layout.addWidget(self.objectivesWidget)
         #self.objectivesWidget.setFixedHeight(100)
         layout.addWidget(self.liveControlWidget)
         layout.addWidget(self.navigationWidget)
@@ -183,6 +182,7 @@ class OctopiGUI(QMainWindow):
         layout.addWidget(self.autofocusWidget)
         layout.addWidget(self.recordTabWidget)
         layout.addWidget(self.navigationViewer)
+        layout.addWidget(self.objectivesWidget)
         layout.addStretch()
 
         # transfer the layout to the central widget
