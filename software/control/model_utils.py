@@ -30,10 +30,15 @@ def generate_predictions(model, device, images, batch_size_inference = 2048):
     all_predictions = []
     t0 = time.time()
     for k, (images, labels) in enumerate(dataloader):
-        images = images.float().to(device)
-        predictions, features = model.get_predictions_and_features(images)
-        predictions = predictions.detach().cpu().numpy()
-        all_predictions.append(predictions)
+        input_images = images.float().to(device)
+        predictions, features = model.get_predictions_and_features(input_images)
+        ret_predictions = predictions.detach().cpu().numpy()
+        all_predictions.append(ret_predictions)
+        del predictions
+        del features
+        del input_images
+        if device == torch.device('cuda') and torch.cuda.is_available():
+            torch.cuda.empty_cache()
 
     predictions = np.vstack(all_predictions)
     print('running inference on ' + str(predictions.shape[0]) + ' images took ' + str(time.time()-t0) + ' s')
