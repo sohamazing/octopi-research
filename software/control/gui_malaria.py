@@ -24,8 +24,6 @@ from control.spot_image_display import *
 
 from control.interactive_m2unet_inference import M2UnetInteractiveModel as m2u
 
-
-
 class OctopiGUI(QMainWindow):
 
     # variables
@@ -45,6 +43,9 @@ class OctopiGUI(QMainWindow):
         # self.imageArrayDisplayWindow.show()
 
         # image display windows
+        self.objectiveStore = core.ObjectiveStore()
+        self.objectivesWidget = widgets.ObjectivesWidget(self.objectiveStore)
+
         self.imageDisplayTabs = QTabWidget()
         self.imageDisplayTabs.addTab(self.imageDisplayWindow.widget, "Live View")
         self.imageDisplayTabs.addTab(self.imageArrayDisplayWindow.widget, "Multichannel Acquisition")
@@ -173,6 +174,7 @@ class OctopiGUI(QMainWindow):
         # layout widgets
         layout = QVBoxLayout() #layout = QStackedLayout()
         #layout.addWidget(self.cameraSettingWidget)
+        #self.objectivesWidget.setFixedHeight(100)
         layout.addWidget(self.liveControlWidget)
         layout.addWidget(self.navigationWidget)
         if SHOW_DAC_CONTROL:
@@ -180,6 +182,7 @@ class OctopiGUI(QMainWindow):
         layout.addWidget(self.autofocusWidget)
         layout.addWidget(self.recordTabWidget)
         layout.addWidget(self.navigationViewer)
+        layout.addWidget(self.objectivesWidget)
         layout.addStretch()
 
         # transfer the layout to the central widget
@@ -188,7 +191,7 @@ class OctopiGUI(QMainWindow):
         # self.centralWidget.setFixedSize(self.centralWidget.minimumSize())
         # self.centralWidget.setFixedWidth(self.centralWidget.minimumWidth())
         # self.centralWidget.setMaximumWidth(self.centralWidget.minimumWidth())
-        self.centralWidget.setFixedWidth(self.centralWidget.minimumSizeHint().width())
+        self.centralWidget.setFixedWidth(int(self.centralWidget.minimumSizeHint().width()*1.2))
 
         if SINGLE_WINDOW:
             dock_display = dock.Dock('Image Display', autoOrientation = False)
@@ -408,6 +411,4 @@ class OctopiGUI(QMainWindow):
             self.imageArrayDisplayWindow.close()
             self.tabbedImageDisplayWindow.close()
         self.microcontroller.close()
-
-
 

@@ -286,6 +286,8 @@ LED_MATRIX_B_FACTOR = 1
 
 DEFAULT_SAVING_PATH = str(Path.home()) + "/Downloads"
 
+DEFAULT_PIXEL_FORMAT = 'MONO12'
+
 class PLATE_READER:
     NUMBER_OF_ROWS = 8
     NUMBER_OF_COLUMNS = 12
@@ -425,6 +427,9 @@ SEGMENTATION_CROP=1500
 DISP_TH_DURING_MULTIPOINT=0.95
 SORT_DURING_MULTIPOINT = False
 
+DO_FLUORESCENCE_RTP = False
+STITCH_TILES_WITH_ASHLAR = False
+
 ##########################################################
 #### start of loading machine specific configurations ####
 ##########################################################
@@ -460,13 +465,23 @@ if config_files:
         myclass = locals()[classkey]
         populate_class_from_dict(myclass,pop_items)
 else:
-    print('machine-specifc configuration not present, the program will exit')
-    exit()
+    print('configuration*.ini file not found, defaulting to legacy configuration')
+    config_files = glob.glob('.' + '/' + 'configuration*.txt')
+    if config_files:
+        if len(config_files) > 1:
+            print('multiple machine configuration files found, the program will exit')
+            exit()
+        print('load machine-specific configuration')
+        exec(open(config_files[0]).read())
+    else:
+        print('machine-specifc configuration not present, the program will exit')
+        exit()
 ##########################################################
 ##### end of loading machine specific configurations #####
 ##########################################################
 # saving path
-DEFAULT_SAVING_PATH = str(Path.home())+DEFAULT_SAVING_PATH
+if not (DEFAULT_SAVING_PATH.startswith(str(Path.home()))):
+    DEFAULT_SAVING_PATH = str(Path.home())+"/"+DEFAULT_SAVING_PATH.strip("/")
 
 # limit switch
 X_HOME_SWITCH_POLARITY = LIMIT_SWITCH_POLARITY.X_HOME

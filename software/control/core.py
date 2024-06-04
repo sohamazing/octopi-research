@@ -8,8 +8,9 @@ from qtpy.QtCore import *
 from qtpy.QtWidgets import *
 from qtpy.QtGui import *
 
-from control.processing_handler import ProcessingHandler, default_upload_fn, process_fn_with_count_and_display
+from control.processing_handler import ProcessingHandler
 from control.stitcher import Stitcher, default_image_reader
+from control.multipoint_built_in_functionalities import malaria_rtp
 
 import control.utils as utils
 from control._def import *
@@ -40,7 +41,15 @@ import pandas as pd
 
 import imageio as iio
 
+import subprocess
+
 from control.processing_pipeline import *
+class ObjectiveStore:
+    def __init__(self, objectives_dict = OBJECTIVES, default_objective = DEFAULT_OBJECTIVE):
+        self.objectives_dict = objectives_dict
+        self.default_objective = default_objective
+        self.current_objective = default_objective
+
 class StreamHandler(QObject):
 
     image_to_display = Signal(np.ndarray)
@@ -363,7 +372,7 @@ class ImageDisplay(QObject):
         self.thread.join()
 
 class Configuration:
-    def __init__(self,mode_id=None,name=None,camera_sn=None,exposure_time=None,analog_gain=None,illumination_source=None,illumination_intensity=None):
+    def __init__(self,mode_id=None,name=None,camera_sn=None,exposure_time=None,analog_gain=None,illumination_source=None,illumination_intensity=None, z_offset=None, pixel_format=None, _pixel_format_options=None):
         self.id = mode_id
         self.name = name
         self.exposure_time = exposure_time
@@ -371,6 +380,13 @@ class Configuration:
         self.illumination_source = illumination_source
         self.illumination_intensity = illumination_intensity
         self.camera_sn = camera_sn
+        self.z_offset = z_offset
+        self.pixel_format = pixel_format
+        if self.pixel_format is None:
+            self.pixel_format = "default"
+        self._pixel_format_options = _pixel_format_options
+        if _pixel_format_options is None:
+            self._pixel_format_options = self.pixel_format
 
 class LiveController(QObject):
 
@@ -1220,7 +1236,10 @@ class MultiPointWorker(QObject):
 
         self.microscope = self.multiPointController.parent
 
-        self.model = self.microscope.segmentation_model
+        try:
+            self.model = self.microscope.segmentation_model
+        except:
+            pass
         self.crop = SEGMENTATION_CROP
 
         # hard-coded model initialization
@@ -1237,8 +1256,8 @@ class MultiPointWorker(QObject):
             except:
                 self.detection_stats[k] = 0
                 self.detection_stats[k]+=new_stats[k]
-        if "Total RBC" in self.detection_stats and "Total Parasites" in self.detection_stats:
-            self.detection_stats["Parasites per uL"] = 5e6*(self.detection_stats["Total Parasites"]/self.detection_stats["Total RBC"])
+        if "Total RBC" in self.detection_stats and "Total Positives" in self.detection_stats:
+            self.detection_stats["Positives per 5M RBC"] = 5e6*(self.detection_stats["Total Positives"]/self.detection_stats["Total RBC"])
         self.signal_detection_stats.emit(self.detection_stats)
 
     def run(self):
@@ -1439,14 +1458,18 @@ class MultiPointWorker(QObject):
                             # metadata = dict(x = self.navigationController.x_pos_mm, y = self.navigationController.y_pos_mm, z = self.navigationController.z_pos_mm)
                             # metadata = json.dumps(metadata)
 
-                            I_fluorescence = None
-                            I_left = None
-                            I_right = None
 
-                            dpc_L = None
-                            dpc_R = None
+                            current_round_images = {}
                             # iterate through selected modes
                             for config in self.selected_configurations:
+                                if config.z_offset is not None: # perform z offset for config, assume
+                                                                # z_offset is in um
+                                    if config.z_offset != 0.0:
+                                        print("Moving to Z offset "+str(config.z_offset))
+                                        self.navigationController.move_z(config.z_offset/1000)
+                                        self.wait_till_operation_is_completed()
+                                        time.sleep(SCAN_STABILIZATION_TIME_MS_Z/1000)
+
                                 if 'USB Spectrometer' not in config.name:
                                     # update the current configuration
                                     self.signal_current_configuration.emit(config)
@@ -1459,7 +1482,16 @@ class MultiPointWorker(QObject):
                                     elif self.liveController.trigger_mode == TriggerMode.HARDWARE:
                                         self.microcontroller.send_hardware_trigger(control_illumination=True,illumination_on_time_us=self.camera.exposure_time*1000)
                                     # read camera frame
+                                    old_pixel_format = self.camera.pixel_format
+                                    if config.pixel_format is not None:
+                                        if config.pixel_format != "" and config.pixel_format.lower() != "default":
+                                            self.camera.set_pixel_format(config.pixel_format)
+                                    
                                     image = self.camera.read_frame()
+
+                                    if config.pixel_format is not None:
+                                        if config.pixel_format != "" and config.pixel_format.lower() != "default":
+                                            self.camera.set_pixel_format(old_pixel_format)
                                     if image is None:
                                         print('self.camera.read_frame() returned None')
                                         continue
@@ -1478,7 +1510,7 @@ class MultiPointWorker(QObject):
                                     stitcher_key = str(config.name)+"_Z_"+str(k)
                                     stitcher_tiled_file_path = os.path.join(current_path, "stitch_input_"+str(config.name).replace(' ','_')+"_Z_"+str(k)+'.tiff') 
                                     stitcher_stitched_file_path = os.path.join(current_path,"stitch_output_"+str(config.name).replace(' ','_')+"_Z_"+str(k)+'.ome.tiff')
-                                    stitcher_default_options = {'align_channel':0,'maximum_shift':int(min(self.crop_width,self.crop_height)*0.05),'filter_sigma':1} # add to UI later
+                                    stitcher_default_options = {'align_channel':0,'maximum_shift':int(min(self.crop_width,self.crop_height)*0.05),'filter_sigma':1,'stdout':subprocess.STDOUT} # add to UI later
                                     if image.dtype == np.uint16:
                                         saving_path = os.path.join(current_path, file_ID + '_' + str(config.name).replace(' ','_') + '.tiff')
                                         if self.camera.is_color:
@@ -1523,15 +1555,9 @@ class MultiPointWorker(QObject):
                                                     }
                                                 }
                                         stitcher_of_interest.add_tile(stitcher_tile_path, tile_metadata)
+                                    
 
-                                    if config.name == 'BF LED matrix left half':
-                                        I_left = np.copy(image)
-                                        dpc_L = I_left
-                                    elif config.name == 'BF LED matrix right half':
-                                        I_right = np.copy(image)
-                                        dpc_R = I_right
-                                    elif config.name == 'Fluorescence 405 nm Ex':
-                                        I_fluorescence = np.copy(image)
+                                    current_round_images[config.name] = np.copy(image)
 
                                     QApplication.processEvents()
                                 else:
@@ -1541,81 +1567,29 @@ class MultiPointWorker(QObject):
                                             self.spectrum_to_display.emit(data)
                                             saving_path = os.path.join(current_path, file_ID + '_' + str(config.name).replace(' ','_') + '_' + str(l) + '.csv')
                                             np.savetxt(saving_path,data,delimiter=',')
+                                
+                                
+                                if config.z_offset is not None: # undo Z offset
+                                                                # assume z_offset is in um
+                                    if config.z_offset != 0.0:
+                                        print("Moving back from Z offset "+str(config.z_offset))
+                                        self.navigationController.move_z(-config.z_offset/1000)
+                                        self.wait_till_operation_is_completed()
+                                        time.sleep(SCAN_STABILIZATION_TIME_MS_Z/1000)
 
-                            # real time processing 
-                            if I_fluorescence is not None and I_left is not None and I_right is not None and self.multiPointController.do_fluorescence_rtp:
-                                if CLASSIFICATION_TEST_MODE: # testing mode
-                                    I_fluorescence = imageio.v2.imread('/home/prakashlab/Documents/tmp/1_1_0_Fluorescence_405_nm_Ex.bmp')
-                                    I_fluorescence = I_fluorescence[:,:,::-1]
-                                    I_left = imageio.v2.imread('/home/prakashlab/Documents/tmp/1_1_0_BF_LED_matrix_left_half.bmp')
-                                    I_right = imageio.v2.imread('/home/prakashlab/Documents/tmp/1_1_0_BF_LED_matrix_right_half.bmp')
-                                processing_fn = process_fn_with_count_and_display
-                                processing_args = [process_fov, I_fluorescence.copy(),I_left.copy(), I_right.copy(), self.microscope.model, self.microscope.device, self.microscope.classification_th]
-                                processing_kwargs = {'upload_fn':default_upload_fn, 'dataHandler':self.microscope.dataHandler, 'multiPointWorker':self,'sort':SORT_DURING_MULTIPOINT,'disp_th':DISP_TH_DURING_MULTIPOINT}
-                                task_dict = {'function':processing_fn, 'args':processing_args, 'kwargs':processing_kwargs}
-                                self.processingHandler.processing_queue.put(task_dict)    
-                                
-                            """
-                            if type(dpc_L) != type(None) and type(dpc_R) != type(None) and self.multiPointController.do_segmentation:
-                                if self.crop > 0:
-                                    dpc_L = utils.centerCrop(dpc_L, self.crop)
-                                    dpc_R = utils.centerCrop(dpc_R, self.crop)
-                                t0 = time.time()
-                                dpc_image = utils.generate_dpc(dpc_L, dpc_R)
-                                saving_path = os.path.join(current_path, file_ID + '_' + "DPC" + '.' + Acquisition.IMAGE_FORMAT)
-                                cv2.imwrite(saving_path,dpc_image)
-                                self.t_dpc.append(time.time()-t0)
-                                print(f"mean dpc time: {np.mean(self.t_dpc)}")
-                                t0 = time.time()
-                                result = self.model.predict_on_images(dpc_image)
-                                probs = (255 * (result - np.min(result))/(np.max(result) - np.min(result))).astype(np.uint8)
-                                threshold = 0.5
-                                mask = (255*(result > threshold)).astype(np.uint8)
-                                self.t_inf.append(time.time()-t0)
-                                print(f"mean inference time: {np.mean(self.t_inf)}")
-                                saving_path = os.path.join(current_path, file_ID + '_' + "Probs" + '.' + Acquisition.IMAGE_FORMAT)
-                                cv2.imwrite(saving_path,probs)
-                                saving_path = os.path.join(current_path, file_ID + '_' + "mask" + '.' + Acquisition.IMAGE_FORMAT)
-                                cv2.imwrite(saving_path,mask)
-                                # colorize mask, overlay
-                                if self.make_over:
-                                    t0 = time.time()
-                                    color_mask, no_cells = utils.colorize_mask_get_counts(mask)
-                                    try:
-                                        self.detection_stats["Total RBC"] += no_cells
-                                    except:
-                                        self.detection_stats["Total RBC"] = 0
-                                        self.detection_stats["Total RBC"] += no_cells
-                                    try:
-                                        if self.detection_stats["Total Parasites"] < self.async_detection_stats["Total Parasites"]:
-                                            self.detection_stats["Total Parasites"] = self.async_detection_stats["Total Parasites"]
-                                    except:
-                                        self.detection_stats["Total Parasites"] = 0
-                                    self.signal_detection_stats.emit(self.detection_stats)
-                                    overlay = utils.overlay_mask_dpc(color_mask, dpc_image)
-                                    saving_path = os.path.join(current_path, file_ID + '_' + "overlay" + '.' + Acquisition.IMAGE_FORMAT)
-                                    cv2.imwrite(saving_path,overlay)
-                                    self.t_over.append(time.time()-t0)
-                                    print(f"mean overlay time: {np.mean(self.t_over)}")
-                                    # display full image
-                                    overlay_disp = utils.rotate_and_flip_image(overlay,rotate_image_angle=self.camera.rotate_image_angle,flip_image=self.camera.flip_image)
-                                    self.image_to_display.emit(overlay_disp)
-                                else:
-                                    mask_disp = utils.rotate_and_flip_image(mask,rotate_image_angle=self.camera.rotate_image_angle,flip_image=self.camera.flip_image)
-                                    self.image_to_display.emit(mask_disp)
-                                # display crops
-                                if self.make_over:
-                                    overlay = utils.crop_image(overlay,self.crop_width,self.crop_height)
-                                    overlay = utils.rotate_and_flip_image(overlay,rotate_image_angle=self.camera.rotate_image_angle,flip_image=self.camera.flip_image)
-                                    self.image_to_display_multi.emit(overlay, 12) # or 13
-                                else:
-                                    self.image_to_display_multi.emit(mask_disp, 12) # or 13
-                                dpc_image = utils.crop_image(dpc_image,self.crop_width,self.crop_height)
-                                dpc_image = utils.rotate_and_flip_image(dpc_image,rotate_image_angle=self.camera.rotate_image_angle,flip_image=self.camera.flip_image)
-                                self.image_to_display_multi.emit(dpc_image, 13)
-                            """ 
-                                
-                                
+
+                            acquired_image_configs = list(current_round_images.keys())
+                            if ('BF LED matrix left half' in acquired_image_configs) and ('BF LED matrix right half' in acquired_image_configs) and ('Fluorescence 405 nm Ex' in acquired_image_configs) and self.multiPointController.do_fluorescence_rtp:
+                                try:
+                                    if (self.microscope.model is None) or (self.microscope.device is None) or (self.microscope.classification_th is None) or (self.microscope.dataHandler is None):
+                                        raise AttributeError('microscope missing model, device, classification_th, and/or dataHandler')
+                                    I_fluorescence = current_round_images['Fluorescence 405 nm Ex']
+                                    I_left = current_round_images['BF LED matrix left half']
+                                    I_right = current_round_images['BF LED matrix right half']
+                                    malaria_rtp(I_fluorescence, I_left, I_right, self,classification_test_mode=CLASSIFICATION_TEST_MODE,sort_during_multipoint=SORT_DURING_MULTIPOINT,disp_th_during_multipoint=DISP_TH_DURING_MULTIPOINT)
+                                except AttributeError as e:
+                                    print(repr(e))
+                                                            
                             # add the coordinate of the current location
                             new_row = pd.DataFrame({'i':[i],'j':[self.NX-1-j],'k':[k],
                                                     'x (mm)':[self.navigationController.x_pos_mm],
@@ -1764,9 +1738,9 @@ class MultiPointController(QObject):
         self.deltat = 0
         self.do_autofocus = False
         self.do_reflection_af = False
-        self.do_stitch_tiles = False
+        self.do_stitch_tiles = STITCH_TILES_WITH_ASHLAR
         self.do_segmentation = False
-        self.do_fluorescence_rtp = True
+        self.do_fluorescence_rtp = DO_FLUORESCENCE_RTP
         self.crop_width = Acquisition.CROP_WIDTH
         self.crop_height = Acquisition.CROP_HEIGHT
         self.display_resolution_scaling = Acquisition.IMAGE_DISPLAY_SCALING_FACTOR
@@ -1779,8 +1753,11 @@ class MultiPointController(QObject):
         self.parent = parent
 
         self.old_images_per_page = 1
-        if self.parent is not None:
-            self.old_images_per_page = self.parent.dataHandler.n_images_per_page
+        try:
+            if self.parent is not None:
+                self.old_images_per_page = self.parent.dataHandler.n_images_per_page
+        except:
+            pass
         self.location_list = None # for flexible multipoint
 
     def set_NX(self,N):
@@ -1828,8 +1805,18 @@ class MultiPointController(QObject):
         self.recording_start_time = time.time()
         # create a new folder
         os.mkdir(os.path.join(self.base_path,self.experiment_ID))
-        self.configurationManager.write_configuration(os.path.join(self.base_path,self.experiment_ID)+"/configurations.xml") # save the configuration for the experiment
+        configManagerThrowaway = ConfigurationManager(self.configurationManager.config_filename)
+        configManagerThrowaway.write_configuration_selected(self.selected_configurations,os.path.join(self.base_path,self.experiment_ID)+"/configurations.xml") # save the configuration for the experiment
         acquisition_parameters = {'dx(mm)':self.deltaX, 'Nx':self.NX, 'dy(mm)':self.deltaY, 'Ny':self.NY, 'dz(um)':self.deltaZ*1000,'Nz':self.NZ,'dt(s)':self.deltat,'Nt':self.Nt,'with AF':self.do_autofocus,'with reflection AF':self.do_reflection_af}
+        try: # write objective data if it is available
+            current_objective = self.parent.objectiveStore.current_objective
+            objective_info = self.parent.objectiveStore.objectives_dict.get(current_objective, {})
+            acquisition_parameters['objective'] = {}
+            for k in objective_info.keys():
+                acquisition_parameters['objective'][k]=objective_info[k]
+            acquisition_parameters['objective']['name']=current_objective
+        except:
+            pass
         f = open(os.path.join(self.base_path,self.experiment_ID)+"/acquisition parameters.json","w")
         f.write(json.dumps(acquisition_parameters))
         f.close()
@@ -1877,8 +1864,14 @@ class MultiPointController(QObject):
                 self.usb_spectrometer_was_streaming = False
 
         if self.parent is not None:
-            self.parent.imageDisplayTabs.setCurrentWidget(self.parent.imageArrayDisplayWindow.widget)
-            self.parent.recordTabWidget.setCurrentWidget(self.parent.statsDisplayWidget)
+            try:
+                self.parent.imageDisplayTabs.setCurrentWidget(self.parent.imageArrayDisplayWindow.widget)
+            except:
+                pass
+            try:
+                self.parent.recordTabWidget.setCurrentWidget(self.parent.statsDisplayWidget)
+            except:
+                pass
         # run the acquisition
         self.timestamp_acquisition_started = time.time()
         # create a QThread object
@@ -1928,9 +1921,12 @@ class MultiPointController(QObject):
         # emit the acquisition finished signal to enable the UI
         self.processingHandler.end_processing()
         if self.parent is not None:
-            self.parent.dataHandler.set_number_of_images_per_page(self.old_images_per_page)
-            self.parent.dataHandler.sort('Sort by prediction score')
-            self.parent.dataHandler.signal_populate_page0.emit()
+            try:
+                self.parent.dataHandler.set_number_of_images_per_page(self.old_images_per_page)
+                self.parent.dataHandler.sort('Sort by prediction score')
+                self.parent.dataHandler.signal_populate_page0.emit()
+            except:
+                pass
         self.acquisitionFinished.emit()
         QApplication.processEvents()
 
@@ -2665,7 +2661,7 @@ class ImageArrayDisplayWindow(QMainWindow):
             self.graphics_widget_4.img.setImage(image,autoLevels=False)
 
 class ConfigurationManager(QObject):
-    def __init__(self,filename=str(Path.home()) + "/configurations_default.xml"):
+    def __init__(self,filename="channel_configurations.xml"):
         QObject.__init__(self)
         self.config_filename = filename
         self.configurations = []
@@ -2693,14 +2689,33 @@ class ConfigurationManager(QObject):
                     analog_gain = float(mode.get('AnalogGain')),
                     illumination_source = int(mode.get('IlluminationSource')),
                     illumination_intensity = float(mode.get('IlluminationIntensity')),
-                    camera_sn = mode.get('CameraSN'))
+                    camera_sn = mode.get('CameraSN'),
+                    z_offset = float(mode.get('ZOffset')),
+                    pixel_format = mode.get('PixelFormat'),
+                    _pixel_format_options = mode.get('_PixelFormat_options')
+                )
             )
 
     def update_configuration(self,configuration_id,attribute_name,new_value):
-        list = self.config_xml_tree_root.xpath("//mode[contains(@ID," + "'" + str(configuration_id) + "')]")
-        mode_to_update = list[0]
+        conf_list = self.config_xml_tree_root.xpath("//mode[contains(@ID," + "'" + str(configuration_id) + "')]")
+        mode_to_update = conf_list[0]
         mode_to_update.set(attribute_name,str(new_value))
         self.save_configurations()
+
+    def update_configuration_without_writing(self, configuration_id, attribute_name, new_value):
+        conf_list = self.config_xml_tree_root.xpath("//mode[contains(@ID," + "'" + str(configuration_id) + "')]")
+        mode_to_update = conf_list[0]
+        mode_to_update.set(attribute_name,str(new_value))
+
+    def write_configuration_selected(self,selected_configurations,filename): # to be only used with a throwaway instance
+                                                                             # of this class
+        for conf in self.configurations:
+            self.update_configuration_without_writing(conf.id, "Selected", 0)
+        for conf in selected_configurations:
+            self.update_configuration_without_writing(conf.id, "Selected", 1)
+        self.write_configuration(filename)
+        for conf in selected_configurations:
+            self.update_configuration_without_writing(conf.id, "Selected", 0)
 
 class PlateReaderNavigationController(QObject):
 

@@ -290,12 +290,13 @@ class M2UnetInteractiveModel:
             the predicted label image
         """
         assert X.ndim == 4
-        X = torch.from_numpy(X).to(device=self.device, dtype=torch.float32)
-        outputs = self.model(X, **kwargs)
+
+        X_in_device = torch.from_numpy(X).to(device=self.device, dtype=torch.float32)
+        outputs = self.model(X_in_device, **kwargs)
         returned_outputs = outputs.detach().cpu().numpy()
         del outputs
-        del X
-        if self.device==torch.device('cuda') and torch.cuda.is_available():
+        del X_in_device
+        if self.device == torch.device('cuda') and torch.cuda.is_available():
             torch.cuda.empty_cache()
         return returned_outputs
 
