@@ -375,18 +375,23 @@ class OctopiGUI(QMainWindow):
         # cuda
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model = self.model.to(self.device)
-        dummy_input = torch.randn(256, 4, 31, 31)  # Adjust as per your input shape
+        dummy_input = torch.randn(1, 4, 31, 31)  # Adjust as per your input shape
         if torch.cuda.is_available():
             dummy_input = dummy_input.cuda()
         _ = self.model(dummy_input)
+        del _
+        del dummy_input
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
 
         #model_path = 'models/m2unet_model_flat_erode1_wdecay5_smallbatch/model_4000_11.pth'
         segmentation_model_path=SEGMENTATION_MODEL_PATH
+        #segmentation_model_path = 'models/m2unet_model_flat_erode1_wdecay5_smallbatch/model_4000_11.pth'
         assert os.path.exists(segmentation_model_path)
         use_trt_segmentation=USE_TRT_SEGMENTATION
         self.segmentation_model = m2u(pretrained_model=segmentation_model_path, use_trt=use_trt_segmentation)
         # run some dummy data thru model - warm-up
-        dummy_data = (255 * np.random.rand(3000,3000)).astype(np.uint8)
+        dummy_data = (2 * np.random.rand(3000,3000)).astype(np.uint8)
         self.segmentation_model.predict_on_images(dummy_data)
 
 

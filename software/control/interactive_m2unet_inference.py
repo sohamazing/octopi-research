@@ -292,7 +292,12 @@ class M2UnetInteractiveModel:
         assert X.ndim == 4
         X = torch.from_numpy(X).to(device=self.device, dtype=torch.float32)
         outputs = self.model(X, **kwargs)
-        return outputs.detach().cpu().numpy()
+        returned_outputs = outputs.detach().cpu().numpy()
+        del outputs
+        del X
+        if self.device==torch.device('cuda') and torch.cuda.is_available():
+            torch.cuda.empty_cache()
+        return returned_outputs
 
     def predict_on_slices(self, predict_images):
         """predict masks for all slices in predict_images

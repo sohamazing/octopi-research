@@ -34,7 +34,7 @@ import matplotlib as mpl
 ################  Default configurations  ################
 ##########################################################
 NUM_ROWS = 1000
-MAX_NUM_ROWS_DISPLAYED_PER_PAGE = 7
+MAX_NUM_ROWS_DISPLAYED_PER_PAGE = 5
 num_cols = 9
 SCALE_FACTOR = 4
 
