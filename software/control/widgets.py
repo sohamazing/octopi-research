@@ -18,6 +18,10 @@ from napari.utils.colormaps import Colormap, AVAILABLE_COLORMAPS
 import re
 import cv2
 
+from napari.utils.colormaps import Colormap, AVAILABLE_COLORMAPS
+import re
+import cv2
+
 from datetime import datetime
 
 from control._def import *
@@ -1869,7 +1873,6 @@ class MultiPointWidget(QFrame):
             self.setEnabled_all(False)
             self.multipointController.set_selected_configurations((item.text() for item in self.list_configurations.selectedItems()))
             self.multipointController.start_new_experiment(self.lineEdit_experimentID.text())
-            # emit acquisition data
             self.signal_acquisition_started.emit(True)
             self.signal_acquisition_shape.emit(self.entry_NX.value(),
                                                self.entry_NY.value(),
@@ -2913,7 +2916,7 @@ class NapariMultiChannelWidget(QWidget):
         self.dtype = np.dtype(image_dtype)
         self.layers_initialized = True
 
-    def updateLayers(self, image, i, j, k, channel_name):
+        def updateLayers(self, image, i, j, k, channel_name):
         """Updates the appropriate slice of the canvas with the new image data."""
         if not self.layers_initialized:
             self.initLayers(image.shape[0], image.shape[1], image.dtype)
