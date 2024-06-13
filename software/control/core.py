@@ -695,6 +695,7 @@ class NavigationController(QObject):
         napariTiledDisplay uses the Nx, Ny, dx_mm, dy_mm fields to move to the correct fov first
         imageArrayDisplayWindow assumes only a single fov (default values do not impact calculation but this is less correct)
         """
+<<<<<<< HEAD
         # check if click to move enabled
         if not self.click_to_move:
             print("allow click to move")
@@ -754,7 +755,7 @@ class NavigationController(QObject):
         offset_y = (click_y * PRVIEW_DOWNSAMPLE_FACTOR) % tile_height
         offset_x_centered = int(offset_x - tile_width / 2)
         offset_y_centered = int(tile_height / 2 - offset_y)
-        self.move_from_click(offset_x_centered, ry_centered, tile_width, tile_height)
+        self.move_from_click(offset_x_centered, offset_y_centered, tile_width, tile_height)
 
     def move_from_click(self, click_x, click_y, image_width, image_height):
         if self.click_to_move:
@@ -2272,7 +2273,7 @@ class MultiPointWorker(QObject):
 
             if n_regions == 1:
                 # only move to the start position if there's only one region in the scan
-                if self.NY > 1 and not IS_WELLPLATE:
+                if self.NY > 1 and not IS_HCS:
                     # move y back
                     self.navigationController.move_y_usteps(-self.deltaY_usteps*(self.NY-1))
                     self.wait_till_operation_is_completed()
