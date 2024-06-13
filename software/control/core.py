@@ -728,6 +728,34 @@ class NavigationController(QObject):
         offset_y_centered = int(tile_height / 2 - offset_y)
         self.move_from_click(offset_x_centered, offset_y_centered, tile_width, tile_height)
 
+    def scan_preview_move_from_click(self, click_x, click_y, image_width, image_height, Nx=1, Ny=1, dx_mm=0.9, dy_mm=0.9):
+        # check if click to move enabled
+        if not self.click_to_move:
+            print("allow click to move")
+            return
+        # restore to raw coordicate
+        click_x = image_width / 2.0 + click_x
+        click_y = image_height / 2.0 - click_y
+        print("click - (x, y):", (click_x, click_y))
+        cx = click_x * Nx // image_width
+        cy = click_y * Ny // image_height
+        print("fov - (col, row):", (cx, cy))
+        pixel_sign_x = 1
+        pixel_sign_y = 1 if INVERTED_OBJECTIVE else -1
+ 
+        # move to selected fov
+        self.move_x_to(self.scan_begin_position_x+dx_mm*cx*pixel_sign_x)
+        self.move_y_to(self.scan_begin_position_y-dy_mm*cy*pixel_sign_y)
+
+        # move to actual click, offset from center fov
+        tile_width = (image_width / Nx) * PRVIEW_DOWNSAMPLE_FACTOR
+        tile_height = (image_height / Ny) * PRVIEW_DOWNSAMPLE_FACTOR
+        offset_x = (click_x * PRVIEW_DOWNSAMPLE_FACTOR) % tile_width
+        offset_y = (click_y * PRVIEW_DOWNSAMPLE_FACTOR) % tile_height
+        offset_x_centered = int(offset_x - tile_width / 2)
+        offset_y_centered = int(tile_height / 2 - offset_y)
+        self.move_from_click(offset_x_centered, ry_centered, tile_width, tile_height)
+
     def move_from_click(self, click_x, click_y, image_width, image_height):
         if self.click_to_move:
             try:
@@ -2244,7 +2272,7 @@ class MultiPointWorker(QObject):
 
             if n_regions == 1:
                 # only move to the start position if there's only one region in the scan
-                if self.NY > 1:
+                if self.NY > 1 and not IS_WELLPLATE:
                     # move y back
                     self.navigationController.move_y_usteps(-self.deltaY_usteps*(self.NY-1))
                     self.wait_till_operation_is_completed()
@@ -2256,6 +2284,9 @@ class MultiPointWorker(QObject):
                     self.navigationController.move_x_usteps(-self.deltaX_usteps*(self.NX-1))
                     self.wait_till_operation_is_completed()
                     time.sleep(SCAN_STABILIZATION_TIME_MS_X/1000)
+
+                if SHOW_TILED_PREVIEW:
+                    self.navigationController.keep_scan_begin_position(self.navigationController.x_pos_mm, self.navigationController.y_pos_mm)
 
                 # move z back
                 if self.navigationController.get_pid_control_flag(2) is False:
