@@ -432,9 +432,8 @@ ENABLE_STROBE_OUTPUT = False
 
 Z_STACKING_CONFIG = 'FROM BOTTOM' # 'FROM BOTTOM', 'FROM TOP'
 
-# Napari integration
+# napari integration
 USE_NAPARI = True
-
 IS_WELLPLATE = False
 
 # plate format
