@@ -1936,6 +1936,10 @@ class MultiPointWorker(QObject):
                                     # process the image -  @@@ to move to camera
                                     image = utils.crop_image(image,self.crop_width,self.crop_height)
                                     image = utils.rotate_and_flip_image(image,rotate_image_angle=self.camera.rotate_image_angle,flip_image=self.camera.flip_image)
+<<<<<<< HEAD
+=======
+                                    
+>>>>>>> 6d2d8b2 (cleanup merge hongquanli)
                                     image_to_display = utils.crop_image(image,round(self.crop_width*self.display_resolution_scaling), round(self.crop_height*self.display_resolution_scaling))
                                     self.image_to_display.emit(image_to_display)
                                     self.image_to_display_multi.emit(image_to_display,config.illumination_source)
@@ -2034,6 +2038,10 @@ class MultiPointWorker(QObject):
                                             image = utils.rotate_and_flip_image(image, rotate_image_angle=self.camera.rotate_image_angle, flip_image=self.camera.flip_image)
                                             # add the image to dictionary
                                             images[config_.name] = np.copy(image)
+                                            # emit R, G, B images
+                                            image_to_display = utils.crop_image(images[config_.name], round(self.crop_width * self.display_resolution_scaling), round(self.crop_height * self.display_resolution_scaling))
+                                            self.image_to_display.emit(image_to_display)
+                                            self.image_to_display_multi.emit(image_to_display, config.illumination_source)
 
                                             # emit R, G, B images
                                             image_to_display = utils.crop_image(images[config_.name], round(self.crop_width * self.display_resolution_scaling), round(self.crop_height * self.display_resolution_scaling))

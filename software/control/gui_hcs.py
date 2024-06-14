@@ -51,9 +51,6 @@ import control.serial_peripherals as serial_peripherals
 if ENABLE_STITCHER:
     import control.stitcher as stitcher
 
-if ENABLE_STITCHER:
-    import control.stitcher as stitcher
-
 if SUPPORT_LASER_AUTOFOCUS:
     import control.core_displacement_measurement as core_displacement_measurement
 
