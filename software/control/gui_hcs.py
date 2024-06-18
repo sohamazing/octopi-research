@@ -258,6 +258,11 @@ class OctopiGUI(QMainWindow):
         self.camera.enable_callback()
 
         # load widgets
+        if ENABLE_SPINNING_DISK_CONFOCAL:
+            self.spinningDiskConfocalWidget = widgets.SpinningDiskConfocalWidget(self.xlight, self.configurationManager)
+        if ENABLE_NL5:
+            import control.NL5Widget as NL5Widget
+            self.nl5Wdiget = NL5Widget.NL5Widget(self.nl5)
         if CAMERA_TYPE == "Toupcam":
             self.cameraSettingWidget = widgets.CameraSettingsWidget(self.camera, include_gain_exposure_time=False, include_camera_temperature_setting = True, include_camera_auto_wb_setting = False)
         else:
@@ -297,7 +302,6 @@ class OctopiGUI(QMainWindow):
             else:
                 self.imageDisplayWindow = core.ImageDisplayWindow(draw_crosshairs=True,show_LUT=True,autoLevels=True)
             self.imageDisplayTabs.addTab(self.imageDisplayWindow.widget, "Live View")
-
         if USE_NAPARI_FOR_MULTIPOINT:
             self.napariMultiChannelWidget = widgets.NapariMultiChannelWidget(self.configurationManager)
             # self.napariMultiChannelWidget.set_pixel_size_um(3.76*2/60)  # ^ for 60x, IMX571, 2x2 binning, todo: from objective and camera config
@@ -305,7 +309,6 @@ class OctopiGUI(QMainWindow):
         else:
             self.imageArrayDisplayWindow = core.ImageArrayDisplayWindow()
             self.imageDisplayTabs.addTab(self.imageArrayDisplayWindow.widget, "Multichannel Acquisition")
-
         if SHOW_TILED_PREVIEW:
             if USE_NAPARI_FOR_TILED_DISPLAY:
                 self.napariTiledDisplayWidget = widgets.NapariTiledDisplayWidget(self.configurationManager)
