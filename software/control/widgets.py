@@ -1873,6 +1873,7 @@ class MultiPointWidget(QFrame):
             self.setEnabled_all(False)
             self.multipointController.set_selected_configurations((item.text() for item in self.list_configurations.selectedItems()))
             self.multipointController.start_new_experiment(self.lineEdit_experimentID.text())
+            # emit acquisition data
             self.signal_acquisition_started.emit(True)
             self.signal_acquisition_shape.emit(self.entry_NX.value(),
                                                self.entry_NY.value(),
@@ -4076,6 +4077,7 @@ class WellSelectionWidget(QTableWidget):
         if (row >= 0 + NUMBER_OF_SKIP and row <= self.rows-1-NUMBER_OF_SKIP ) and ( col >= 0 + NUMBER_OF_SKIP and col <= self.columns-1-NUMBER_OF_SKIP ):
             x_mm = col*WELL_SPACING_MM + A1_X_MM + WELLPLATE_OFFSET_X_mm
             y_mm = row*WELL_SPACING_MM + A1_Y_MM + WELLPLATE_OFFSET_Y_mm
+            self.signal_wellSelected.emit(True)
             self.signal_wellSelectedPos.emit(x_mm,y_mm)
         else:
             self.signal_wellSelected.emit(False)

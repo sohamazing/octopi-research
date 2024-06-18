@@ -695,45 +695,11 @@ class NavigationController(QObject):
         napariTiledDisplay uses the Nx, Ny, dx_mm, dy_mm fields to move to the correct fov first
         imageArrayDisplayWindow assumes only a single fov (default values do not impact calculation but this is less correct)
         """
-<<<<<<< HEAD
         # check if click to move enabled
         if not self.click_to_move:
             print("allow click to move")
             return
 
-        # restore to raw coordicate
-        click_x = image_width / 2.0 + click_x
-        click_y = image_height / 2.0 - click_y
-        print("click - (x, y):", (click_x, click_y))
-        click_col = click_x * Nx // image_width
-        click_row = click_y * Ny // image_height
-        print("fov - (col, row):", (click_col, click_row))
-
-        end_position_x = Ny % 2
-        d_col = Nx - (click_col + 1) if end_position_x else click_col
-        print("d_col, row:", d_col, click_row)
-
-        pixel_sign_x = 1 * (-1)**end_position_x
-        pixel_sign_y = 1 if INVERTED_OBJECTIVE else -1
- 
-        # move to selected fov
-        self.move_x_to(self.scan_begin_position_x+dx_mm*d_col*pixel_sign_x)
-        self.move_y_to(self.scan_begin_position_y-dy_mm*click_row*pixel_sign_y)
-
-        # move to actual click, offset from center fov
-        tile_width = (image_width / Nx) * PRVIEW_DOWNSAMPLE_FACTOR
-        tile_height = (image_height / Ny) * PRVIEW_DOWNSAMPLE_FACTOR
-        offset_x = (click_x * PRVIEW_DOWNSAMPLE_FACTOR) % tile_width
-        offset_y = (click_y * PRVIEW_DOWNSAMPLE_FACTOR) % tile_height
-        offset_x_centered = int(offset_x - tile_width / 2)
-        offset_y_centered = int(tile_height / 2 - offset_y)
-        self.move_from_click(offset_x_centered, offset_y_centered, tile_width, tile_height)
-
-    def scan_preview_move_from_click(self, click_x, click_y, image_width, image_height, Nx=1, Ny=1, dx_mm=0.9, dy_mm=0.9):
-        # check if click to move enabled
-        if not self.click_to_move:
-            print("allow click to move")
-            return
         # restore to raw coordicate
         click_x = image_width / 2.0 + click_x
         click_y = image_height / 2.0 - click_y
@@ -2045,11 +2011,6 @@ class MultiPointWorker(QObject):
                                             self.image_to_display.emit(image_to_display)
                                             self.image_to_display_multi.emit(image_to_display, config.illumination_source)
 
-                                            # emit R, G, B images
-                                            image_to_display = utils.crop_image(images[config_.name], round(self.crop_width * self.display_resolution_scaling), round(self.crop_height * self.display_resolution_scaling))
-                                            self.image_to_display.emit(image_to_display)
-                                            self.image_to_display_multi.emit(image_to_display, config.illumination_source)
-
                                     # Check if the image is RGB or monochrome
                                     i_size = images['BF LED matrix full_R'].shape
                                     i_dtype = images['BF LED matrix full_R'].dtype
@@ -2276,9 +2237,6 @@ class MultiPointWorker(QObject):
                         self.wait_till_operation_is_completed()
                         time.sleep(SCAN_STABILIZATION_TIME_MS_Y/1000)
                         self.dy_usteps = self.dy_usteps + self.deltaY_usteps
-
-            if SHOW_TILED_PREVIEW:
-                    self.navigationController.keep_scan_begin_position(self.navigationController.x_pos_mm, self.navigationController.y_pos_mm)
 
             # finished XY scan
             if SHOW_TILED_PREVIEW:

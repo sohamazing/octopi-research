@@ -168,7 +168,7 @@ class OctopiGUI(QMainWindow):
             self.trackingControlWidget = widgets.TrackingControllerWidget(self.trackingController,self.configurationManager,show_configurations=TRACKING_SHOW_MICROSCOPE_CONFIGURATIONS)
         self.multiPointWidget = widgets.MultiPointWidget(self.multipointController,self.configurationManager)
 
-        # acqusiition tabs
+        # acquisition tabs
         self.recordTabWidget = QTabWidget()
         if ENABLE_TRACKING:
             self.recordTabWidget.addTab(self.trackingControlWidget, "Tracking")
@@ -270,16 +270,6 @@ class OctopiGUI(QMainWindow):
             self.navigationController.signal_joystick_button_pressed.connect(self.trackingControlWidget.slot_joystick_button_pressed)
         else:
             self.navigationController.signal_joystick_button_pressed.connect(self.autofocusController.autofocus)
-
-        if ENABLE_STITCHER:
-            self.multipointController.signal_stitcher.connect(self.startStitcher)
-            self.multiPointWidget.signal_stitcher_widget.connect(self.toggleStitcherWidget)
-            self.multiPointWidget.signal_acquisition_channels.connect(self.stitcherWidget.updateRegistrationChannels) # change enabled registration channels
-
-        if ENABLE_STITCHER:
-            self.multipointController.signal_stitcher.connect(self.startStitcher)
-            self.multiPointWidget.signal_stitcher_widget.connect(self.toggleStitcherWidget)
-            self.multiPointWidget.signal_acquisition_channels.connect(self.stitcherWidget.updateRegistrationChannels) # change enabled registration channels
 
         if ENABLE_STITCHER:
             self.multipointController.signal_stitcher.connect(self.startStitcher)
