@@ -704,15 +704,20 @@ class NavigationController(QObject):
         click_x = image_width / 2.0 + click_x
         click_y = image_height / 2.0 - click_y
         print("click - (x, y):", (click_x, click_y))
-        cx = click_x * Nx // image_width
-        cy = click_y * Ny // image_height
-        print("fov - (col, row):", (cx, cy))
-        pixel_sign_x = 1
+        click_col = click_x * Nx // image_width
+        click_row = click_y * Ny // image_height
+        print("fov - (col, row):", (click_col, click_row))
+
+        end_position_x = Ny % 2
+        d_col = Nx - (click_col + 1) if end_position_x else click_col
+        print("d_col, row:", d_col, click_row)
+
+        pixel_sign_x = 1 * (-1)**end_position_x
         pixel_sign_y = 1 if INVERTED_OBJECTIVE else -1
  
         # move to selected fov
-        self.move_x_to(self.scan_begin_position_x+dx_mm*cx*pixel_sign_x)
-        self.move_y_to(self.scan_begin_position_y-dy_mm*cy*pixel_sign_y)
+        self.move_x_to(self.scan_begin_position_x+dx_mm*d_col*pixel_sign_x)
+        self.move_y_to(self.scan_begin_position_y-dy_mm*click_row*pixel_sign_y)
 
         # move to actual click, offset from center fov
         tile_width = (image_width / Nx) * PRVIEW_DOWNSAMPLE_FACTOR
@@ -2234,6 +2239,9 @@ class MultiPointWorker(QObject):
                         self.dy_usteps = self.dy_usteps + self.deltaY_usteps
 
             # finished XY scan
+            if SHOW_TILED_PREVIEW:
+                self.navigationController.keep_scan_begin_position(self.navigationController.x_pos_mm, self.navigationController.y_pos_mm)
+
             if n_regions == 1:
                 # only move to the start position if there's only one region in the scan
                 if self.NY > 1:
@@ -2248,9 +2256,6 @@ class MultiPointWorker(QObject):
                     self.navigationController.move_x_usteps(-self.deltaX_usteps*(self.NX-1))
                     self.wait_till_operation_is_completed()
                     time.sleep(SCAN_STABILIZATION_TIME_MS_X/1000)
-
-                if SHOW_TILED_PREVIEW:
-                    self.navigationController.keep_scan_begin_position(self.navigationController.x_pos_mm, self.navigationController.y_pos_mm)
 
                 # move z back
                 if self.navigationController.get_pid_control_flag(2) is False:
