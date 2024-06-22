@@ -369,6 +369,7 @@ class OctopiGUI(QMainWindow):
         self.classification_th = 0.8
         # model
         model_path = CLASSIFICATION_MODEL_PATH
+        model_path = 'tmp/model_perf_r34_b32.pt'
         if torch.cuda.is_available():
             self.model = torch.load(model_path)
         else:

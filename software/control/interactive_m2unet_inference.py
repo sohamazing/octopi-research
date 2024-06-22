@@ -2,7 +2,7 @@ import os
 import json
 import numpy as np
 from control.m2unet import m2unet
-import torch2trt
+#import torch2trt
 import torch
 import torch.nn as nn
 import torch.optim as optim
