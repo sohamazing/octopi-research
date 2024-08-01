@@ -234,23 +234,6 @@ class OctopiGUI(QMainWindow):
         self.navigationController.set_z_limit_pos_mm(SOFTWARE_POS_LIMIT.Z_POSITIVE)
 
         # move to scanning position
-<<<<<<< HEAD
-        self.navigationController.move_x(20)
-        while self.microcontroller.is_busy():
-            time.sleep(0.005)
-        self.navigationController.move_y(20)
-        while self.microcontroller.is_busy():
-            time.sleep(0.005)
-        # # move z
-        # self.navigationController.move_z_to(DEFAULT_Z_POS_MM)
-        # # wait for the operation to finish
-        # t0 = time.time() 
-        # while self.microcontroller.is_busy():
-        #     time.sleep(0.005)
-        #     if time.time() - t0 > 5:
-        #         print('z return timeout, the program will exit')
-        #         sys.exit(1)
-=======
         if HOMING_ENABLED_X and HOMING_ENABLED_Y:
             self.navigationController.move_x(20)
             while self.microcontroller.is_busy():
@@ -258,7 +241,6 @@ class OctopiGUI(QMainWindow):
             self.navigationController.move_y(20)
             while self.microcontroller.is_busy():
                 time.sleep(0.005)
->>>>>>> 0e71d36 (Configuration file for hamamatsu camera)
 
         # set piezo arguments
         if ENABLE_OBJECTIVE_PIEZO is True:
@@ -383,39 +365,33 @@ class OctopiGUI(QMainWindow):
         if USE_ZABER_EMISSION_FILTER_WHEEL or USE_OPTOSPIN_EMISSION_FILTER_WHEEL:
             self.microscopeControlTabWidget.addTab(self.filterControllerWidget,"Emission Filter")
 
-        # Creating the frame widget
-        # frame = QFrame()
-        # frame.setFrameStyle(QFrame.Panel | QFrame.Raised)
-        # # Creating the top row layout and adding widgets
-        # top_row_layout = QHBoxLayout()
-        # top_row_layout.addWidget(self.objectivesWidget)
-        # top_row_layout.addWidget(self.wellplateFormatWidget)
-        # frame.setLayout(top_row_layout)  # Set the layout on the frame
-        # layout = QVBoxLayout() #layout = QStackedLayout()
-        # layout.addWidget(frame)
+        # Objective and Wellplate Format Selection
+        layout = QVBoxLayout()  #layout = QStackedLayout()
 
-        frame1 = QFrame()
-        frame1.setFrameStyle(QFrame.Panel | QFrame.Raised)
-        frame2 = QFrame()
-        frame2.setFrameStyle(QFrame.Panel | QFrame.Raised)
-
-        # Creating layouts for each frame
-        layout1 = QVBoxLayout()
-        layout1.addWidget(self.objectivesWidget)
-        frame1.setLayout(layout1)
-
-        layout2 = QVBoxLayout()
-        layout2.addWidget(self.wellplateFormatWidget)
-        frame2.setLayout(layout2)
-
-        # Creating the top row layout and adding framed widgets
+        frame = QFrame()
+        frame.setFrameStyle(QFrame.Panel | QFrame.Raised)
         top_row_layout = QHBoxLayout()
-        top_row_layout.addWidget(frame1)
-        top_row_layout.addWidget(frame2)
+        top_row_layout.addWidget(self.objectivesWidget)
+        top_row_layout.addWidget(self.wellplateFormatWidget)
+        frame.setLayout(top_row_layout)  # Set the layout on the frame
+        layout.addWidget(frame)
 
-        # Creating the main layout
-        layout = QVBoxLayout()
-        layout.addLayout(top_row_layout)
+        # frame1 = QFrame()
+        # frame1.setFrameStyle(QFrame.Panel | QFrame.Raised)
+        # frame2 = QFrame()
+        # frame2.setFrameStyle(QFrame.Panel | QFrame.Raised)
+
+        # layout1 = QVBoxLayout()
+        # layout1.addWidget(self.objectivesWidget)
+        # frame1.setLayout(layout1)
+        # layout2 = QVBoxLayout()
+        # layout2.addWidget(self.wellplateFormatWidget)
+        # frame2.setLayout(layout2)
+
+        # top_row_layout = QHBoxLayout()
+        # top_row_layout.addWidget(frame1)
+        # top_row_layout.addWidget(frame2)
+        # layout.addLayout(top_row_layout)
 
         if USE_NAPARI_FOR_LIVE_VIEW:
             layout.addWidget(self.microscopeControlTabWidget)
@@ -448,7 +424,7 @@ class OctopiGUI(QMainWindow):
             dock_display.setStretch(x=100,y=100)
             self.dock_wellSelection = dock.Dock('Well Selector', autoOrientation = False)
             self.dock_wellSelection.showTitleBar()
-            if not USE_NAPARI_FOR_LIVE_VIEW:
+            if not USE_NAPARI_WELL_SELECTION:
                 self.dock_wellSelection.addWidget(self.wellSelectionWidget)
             #self.dock_wellSelection.addWidget(self.wellplateFormatWidget) # todo: add widget to select wellplate format
             self.dock_wellSelection.setFixedHeight(self.dock_wellSelection.minimumSizeHint().height())
@@ -460,7 +436,7 @@ class OctopiGUI(QMainWindow):
 
             main_dockArea = dock.DockArea()
             main_dockArea.addDock(dock_display)
-            if not USE_NAPARI_FOR_LIVE_VIEW:
+            if not USE_NAPARI_WELL_SELECTION:
                 main_dockArea.addDock(self.dock_wellSelection,'bottom')
             main_dockArea.addDock(dock_controlPanel,'right')
             self.setCentralWidget(main_dockArea)
@@ -552,7 +528,7 @@ class OctopiGUI(QMainWindow):
             self.streamHandler.image_to_display.connect(lambda image: self.napariLiveWidget.updateLiveLayer(image, from_autofocus=False))
             self.multipointController.image_to_display.connect(lambda image: self.napariLiveWidget.updateLiveLayer(image, from_autofocus=False))
             self.napariLiveWidget.signal_coordinates_clicked.connect(self.navigationController.move_from_click)
-            # new live connections ??? fix
+            # new live control connections ?
             self.napariLiveWidget.signal_newExposureTime.connect(self.cameraSettingWidget.set_exposure_time)
             self.napariLiveWidget.signal_newAnalogGain.connect(self.cameraSettingWidget.set_analog_gain)
             # self.napariLiveWidget.signal_autoLevelSetting.connect(self.imageDisplayWindow.set_autolevel)
@@ -812,7 +788,7 @@ class OctopiGUI(QMainWindow):
                 self.wellSelectionWidget.deleteLater()
                 self.wellSelectionWidget = widgets.Well1536SelectionWidget()
                 self.scanCoordinates.add_well_selector(self.wellSelectionWidget)
-                if USE_NAPARI_FOR_LIVE_VIEW:
+                if USE_NAPARI_WELL_SELECTION:
                      self.napariLiveWidget.replace_well_selector(self.wellSelectionWidget)
                 else:
                     self.dock_wellSelection.addWidget(self.wellSelectionWidget)
@@ -822,7 +798,7 @@ class OctopiGUI(QMainWindow):
                 self.wellSelectionWidget.deleteLater()
                 self.wellSelectionWidget = widgets.WellSelectionWidget(format_)
                 self.scanCoordinates.add_well_selector(self.wellSelectionWidget)
-                if USE_NAPARI_FOR_LIVE_VIEW:
+                if USE_NAPARI_WELL_SELECTION:
                     self.napariLiveWidget.replace_well_selector(self.wellSelectionWidget)
                 else:
                     self.dock_wellSelection.addWidget(self.wellSelectionWidget)
@@ -838,7 +814,7 @@ class OctopiGUI(QMainWindow):
         self.wellSelectionWidget.onSelectionChanged()
 
     def toggleWellSelector(self, show):
-        if USE_NAPARI_FOR_LIVE_VIEW:
+        if USE_NAPARI_WELL_SELECTION:
             self.napariLiveWidget.toggle_well_selector(show)
         else:
             self.dock_wellSelection.setVisible(show)
