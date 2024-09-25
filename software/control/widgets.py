@@ -1065,7 +1065,7 @@ class LiveControlWidget(QFrame):
         if show_display_options:
             self.grid.addLayout(grid_line05)
 
-        self.grid.addStretch()
+        #self.grid.addStretch()
         self.setLayout(self.grid)
 
 
@@ -4313,7 +4313,6 @@ class StitcherWidget(QFrame):
         self.viewOutputButton.clicked.connect(self.viewOutputNapari)
 
         self.output_path = output_path
-        self.contrastManager.update_acquisition_dtype(dtype)
 
     def extractWavelength(self, name):
         # Split the string and find the wavelength number immediately after "Fluorescence"
