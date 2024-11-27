@@ -188,7 +188,7 @@ class HighContentScreeningGui(QMainWindow):
             self.emission_filter_wheel = serial_peripherals.FilterController_Simulation(115200, 8, serial.PARITY_NONE, serial.STOPBITS_ONE)
         if USE_OPTOSPIN_EMISSION_FILTER_WHEEL:
             self.emission_filter_wheel = serial_peripherals.Optospin_Simulation(SN=None)
-        self.microcontroller = microcontroller.Microcontroller(existing_serial=microcontroller.SimSerial())
+        self.microcontroller = microcontroller.Microcontroller_Simulation()
 
     def loadHardwareObjects(self):
         # Initialize hardware objects
@@ -269,6 +269,7 @@ class HighContentScreeningGui(QMainWindow):
 
         try:
             self.microcontroller = microcontroller.Microcontroller(version=CONTROLLER_VERSION, sn=CONTROLLER_SN)
+            #self.microcontroller = microcontroller.Microcontroller(existing_serial=microcontroller.SimSerial())
         except Exception:
             self.log.error(f"Error initializing Microcontroller")
             raise
