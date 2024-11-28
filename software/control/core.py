@@ -724,9 +724,8 @@ class NavigationController(QObject):
     xPos = Signal(float)
     yPos = Signal(float)
     zPos = Signal(float)
-    new_zPos_mm = Signal(float)
     thetaPos = Signal(float)
-    xyPos = Signal(float,float)
+    xyPos = Signal(float,float,bool)
     signal_joystick_button_pressed = Signal()
 
     # x y z axis pid enable flag
@@ -763,6 +762,9 @@ class NavigationController(QObject):
         # scan start position
         self.scan_begin_position_x = 0
         self.scan_begin_position_y = 0
+        # last pos to check if still moving
+        self.last_x_pos_mm = 0
+        self.last_y_pos_mm = 0
     
     def get_mm_per_ustep_X(self):
         return SCREW_PITCH_X_MM/(self.x_microstepping*FULLSTEPS_PER_REV_X)
@@ -920,7 +922,13 @@ class NavigationController(QObject):
         self.yPos.emit(self.y_pos_mm)
         self.zPos.emit(self.z_pos_mm*1000)
         self.thetaPos.emit(self.theta_pos_rad*360/(2*math.pi))
-        self.xyPos.emit(self.x_pos_mm,self.y_pos_mm)
+
+        if self.last_x_pos_mm == self.x_pos_mm and self.last_y_pos_mm == self.y_pos_mm:
+            self.xyPos.emit(self.x_pos_mm,self.y_pos_mm,True) # draw scan grid
+        else:
+            self.xyPos.emit(self.x_pos_mm,self.y_pos_mm,False) # no scan grid (only draw fov)
+            self.last_x_pos_mm = self.x_pos_mm
+            self.last_y_pos_mm = self.y_pos_mm
 
         if microcontroller.signal_joystick_button_pressed_event:
             if self.enable_joystick_button_action:
@@ -3733,7 +3741,7 @@ class NavigationViewer(QFrame):
         self.update_display_properties(sample)
         self.draw_current_fov(self.x_mm, self.y_mm)
 
-    def update_current_location(self, x_mm=None, y_mm=None):
+    def update_current_location(self, x_mm=None, y_mm=None, draw_scan_grid=False):
         if x_mm is None and y_mm is None:
             self.draw_current_fov(self.x_mm, self.y_mm)
 
@@ -3744,14 +3752,14 @@ class NavigationViewer(QFrame):
                 self.x_mm = x_mm
                 self.y_mm = y_mm
                 # update_live_scan_grid
-                if 'glass slide'in self.sample and not self.acquisition_started:
+                if 'glass slide'in self.sample and not self.acquisition_started and draw_scan_grid:
                     self.signal_update_live_scan_grid.emit(x_mm, y_mm)
         else:
             self.draw_current_fov(x_mm, y_mm)
             self.x_mm = x_mm
             self.y_mm = y_mm
             # update_live_scan_grid
-            if 'glass slide'in self.sample and not self.acquisition_started:
+            if 'glass slide'in self.sample and not self.acquisition_started and draw_scan_grid:
                 self.signal_update_live_scan_grid.emit(x_mm, y_mm)
 
     def get_FOV_pixel_coordinates(self, x_mm, y_mm):
