@@ -3553,6 +3553,10 @@ class NavigationViewer(QFrame):
         self.view.addItem(self.scan_overlay_item)
         self.view.addItem(self.fov_overlay_item)
 
+        self.background_item.setZValue(-1)  # Background layer at the bottom
+        self.scan_overlay_item.setZValue(0)  # Scan overlay in the middle
+        self.fov_overlay_item.setZValue(1)  # FOV overlay on top
+
     def update_display_properties(self, sample):
         if sample == 'glass slide':
             self.location_update_threshold_mm = 0.2
