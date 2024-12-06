@@ -822,7 +822,7 @@ class HighContentScreeningGui(QMainWindow):
                     self.napari_connections['napariMosaicDisplayWidget'].extend([
                         (self.wellplateMultiPointWidget.signal_acquisition_channels, self.napariMosaicDisplayWidget.initChannels),
                         (self.wellplateMultiPointWidget.signal_acquisition_shape, self.napariMosaicDisplayWidget.initLayersShape),
-                        (self.wellplateMultiPointWidget.signal_draw_manual_shape, self.napariMosaicDisplayWidget.enable_shape_drawing),
+                        (self.wellplateMultiPointWidget.signal_manual_shape_mode, self.napariMosaicDisplayWidget.enable_shape_drawing),
                         (self.napariMosaicDisplayWidget.signal_shape_drawn, self.wellplateMultiPointWidget.update_manual_shape)
                     ])
 
