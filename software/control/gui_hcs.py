@@ -876,10 +876,10 @@ class HighContentScreeningGui(QMainWindow):
             dialog.exec_()
 
     def onTabChanged(self, index):
-        is_flexible = (index == self.recordTabWidget.indexOf(self.flexibleMultiPointWidget)) if ENABLE_FLEXIBLE_MULTIPOINT else False
-        is_scan_grid = (index == self.recordTabWidget.indexOf(self.wellplateMultiPointWidget)) if ENABLE_WELLPLATE_MULTIPOINT else False
+        is_flexible_acquisition = (index == self.recordTabWidget.indexOf(self.flexibleMultiPointWidget)) if ENABLE_FLEXIBLE_MULTIPOINT else False
+        is_wellplate_acquisition = (index == self.recordTabWidget.indexOf(self.wellplateMultiPointWidget)) if ENABLE_WELLPLATE_MULTIPOINT else False
 
-        if is_scan_grid:
+        if is_wellplate_acquisition:
             if self.wellplateMultiPointWidget.combobox_shape.currentText() == 'Manual':
                 # trigger manual shape update
                 if self.wellplateMultiPointWidget.manual_shapes:
@@ -889,12 +889,12 @@ class HighContentScreeningGui(QMainWindow):
                 self.navigationViewer.clear_overlay()
                 self.wellSelectionWidget.onSelectionChanged()
 
-        elif is_flexible:
+        elif is_flexible_acquisition:
             # trigger flexible regions update
             self.wellplateMultiPointWidget.clear_regions()
             self.flexibleMultiPointWidget.update_fov_positions()
 
-        self.toggleWellSelector(is_scan_grid and self.wellSelectionWidget.format != 'glass slide')
+        self.toggleWellSelector(is_wellplate_acquisition and self.wellSelectionWidget.format != 'glass slide')
         acquisitionWidget = self.recordTabWidget.widget(index)
         if ENABLE_STITCHER:
             self.toggleStitcherWidget(acquisitionWidget.checkbox_stitchOutput.isChecked())
@@ -1022,8 +1022,8 @@ class HighContentScreeningGui(QMainWindow):
             self.liveControlWidget.toggle_autolevel(not acquisition_started)
 
         # hide well selector during acquisition
-        is_scan_grid = (current_index == self.recordTabWidget.indexOf(self.wellplateMultiPointWidget)) if ENABLE_WELLPLATE_MULTIPOINT else False
-        if is_scan_grid and self.wellSelectionWidget.format != 'glass slide':
+        is_wellplate_acquisition = (current_index == self.recordTabWidget.indexOf(self.wellplateMultiPointWidget)) if ENABLE_WELLPLATE_MULTIPOINT else False
+        if is_wellplate_acquisition and self.wellSelectionWidget.format != 'glass slide':
             self.toggleWellSelector(not acquisition_started)
 
         # display acquisition progress bar during acquisition
