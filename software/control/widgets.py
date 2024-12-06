@@ -3395,7 +3395,7 @@ class WellplateMultiPointWidget(QFrame):
     signal_acquisition_shape = Signal(int, float) # acquisition Nz, dz
     signal_stitcher_z_levels = Signal(int) # live Nz
     signal_stitcher_widget = Signal(bool) # start stitching
-    signal_draw_manual_shape = Signal(bool) # draw manual shape on mosaic display
+    signal_manual_shape_mode = Signal(bool) # enable manual shape layer on mosaic display
     # signal_z_stacking = Signal(int)
 
 
@@ -3856,9 +3856,9 @@ class WellplateMultiPointWidget(QFrame):
     def on_set_shape(self):
         shape = self.combobox_shape.currentText()
         if shape == 'Manual':
-            self.signal_draw_manual_shape.emit(True)
+            self.signal_manual_shape_mode.emit(True)
         else:
-            self.signal_draw_manual_shape.emit(False)
+            self.signal_manual_shape_mode.emit(False)
             self.update_coverage_from_scan_size()
             self.update_coordinates()
 
@@ -4363,7 +4363,7 @@ class WellplateMultiPointWidget(QFrame):
         self.btn_startAcquisition.setChecked(False)
         self.set_well_coordinates(self.well_selected)
         if self.combobox_shape.currentText() == 'Manual':
-            self.signal_draw_manual_shape.emit(True)
+            self.signal_manual_shape_mode.emit(True)
         self.setEnabled_all(True)
 
     def setEnabled_all(self, enabled):
