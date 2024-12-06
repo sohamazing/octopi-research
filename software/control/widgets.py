@@ -2105,7 +2105,7 @@ class FlexibleMultiPointWidget(QFrame):
 
         self.entry_overlap = QDoubleSpinBox()
         self.entry_overlap.setRange(0, 99)
-        self.entry_overlap.setDecimals(1) 
+        self.entry_overlap.setDecimals(1)
         self.entry_overlap.setSuffix(' %')
         self.entry_overlap.setValue(10)
         self.entry_overlap.setKeyboardTracking(False)
@@ -2499,7 +2499,7 @@ class FlexibleMultiPointWidget(QFrame):
     def set_z_min(self):
         z_value = self.navigationController.z_pos_mm * 1000  # Convert to μm
         self.entry_minZ.setValue(z_value)
-        
+
     def set_z_max(self):
         z_value = self.navigationController.z_pos_mm * 1000  # Convert to μm
         self.entry_maxZ.setValue(z_value)
@@ -4013,7 +4013,7 @@ class WellplateMultiPointWidget(QFrame):
                 )
                 self.region_fov_coordinates_dict['current'] = scan_coordinates
 
-            # Calculate total number of positions for signal emission # not needed ever 
+            # Calculate total number of positions for signal emission # not needed ever
             total_positions = sum(len(coords) for coords in self.region_fov_coordinates_dict.values())
             Nx = Ny = int(math.sqrt(total_positions))
             dx_mm = dy_mm = scan_size_mm / (Nx - 1) if Nx > 1 else scan_size_mm
@@ -4044,7 +4044,7 @@ class WellplateMultiPointWidget(QFrame):
 
             # Start acquisition
             self.multipointController.run_acquisition(location_list=self.region_coordinates, coordinate_dict=self.region_fov_coordinates_dict)
-    
+
         else:
             self.multipointController.request_abort_aquisition()
             self.is_current_acquisition_widget = False
@@ -6383,7 +6383,7 @@ class WellplateCalibration(QDialog):
         self.mode_group.addButton(self.new_format_radio)
         self.mode_group.addButton(self.calibrate_format_radio)
         self.new_format_radio.setChecked(True)
-        
+
         left_layout.addWidget(self.new_format_radio)
         left_layout.addWidget(self.calibrate_format_radio)
 
@@ -6659,7 +6659,7 @@ class WellplateCalibration(QDialog):
 
                 print(f"Updating existing format {selected_format} well plate")
                 print(f"OLD: 'a1_x_mm': {existing_settings['a1_x_mm']}, 'a1_y_mm': {existing_settings['a1_y_mm']}, 'well_size_mm': {existing_settings['well_size_mm']}")
-                print(f"NEW: 'a1_x_mm': {a1_x_mm}, 'a1_y_mm': {a1_y_mm}, 'well_size_mm': {well_size_mm}") 
+                print(f"NEW: 'a1_x_mm': {a1_x_mm}, 'a1_y_mm': {a1_y_mm}, 'well_size_mm': {well_size_mm}")
 
                 updated_settings = {
                     'a1_x_mm': a1_x_mm,
