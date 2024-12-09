@@ -4907,7 +4907,7 @@ class NapariMultiChannelWidget(QWidget):
         self.layers_initialized = True
         self.update_layer_count = 0
 
-    def updateLayers(self, image, i, j, k, channel_name):
+    def updateLayers(self, image, x, y, k, channel_name):
         """Updates the appropriate slice of the canvas with the new image data."""
         rgb = len(image.shape) == 3
 
