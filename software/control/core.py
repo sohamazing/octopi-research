@@ -3514,7 +3514,7 @@ class NavigationViewer(QFrame):
         self.graphics_widget = pg.GraphicsLayoutWidget()
         self.graphics_widget.setBackground("w")
 
-        self.view = self.graphics_widget.addViewBox(invertX=invertX, invertY=True)
+        self.view = self.graphics_widget.addViewBox(invertX=not INVERTED_OBJECTIVE, invertY=True)
         self.view.setAspectLocked(True)
 
         self.grid = QVBoxLayout()
@@ -3567,15 +3567,11 @@ class NavigationViewer(QFrame):
             self.mm_per_pixel = 0.084665
             self.origin_x_pixel = 50
             self.origin_y_pixel = 0
-            self.view.invertX(False)
-            self.view.invertY(True)
         else:
             self.location_update_threshold_mm = 0.05
             self.mm_per_pixel = 0.084665
             self.origin_x_pixel = self.a1_x_pixel - (self.a1_x_mm)/self.mm_per_pixel
             self.origin_y_pixel = self.a1_y_pixel - (self.a1_y_mm)/self.mm_per_pixel
-            self.view.invertX(False)
-            self.view.invertY(True)
         self.update_fov_size()
 
     def update_fov_size(self):
