@@ -3873,7 +3873,7 @@ class WellplateMultiPointWidget(QFrame):
             self.update_coordinates()
 
     def update_manual_shape(self, shapes_data_mm):
-        if self.parent.recordTabWidget.currentWidget() != self:
+        if hasattr(self.parent, 'recordTabWidget') and self.parent.recordTabWidget.currentWidget() != self:
             return
 
         self.clear_regions()
@@ -3957,7 +3957,7 @@ class WellplateMultiPointWidget(QFrame):
         self.entry_maxZ.blockSignals(False)
 
     def set_live_scan_coordinates(self, x_mm, y_mm):
-        if self.parent.recordTabWidget.currentWidget() != self
+        if hasattr(self.parent, 'recordTabWidget') and self.parent.recordTabWidget.currentWidget() != self:
             return
 
         if self.combobox_shape.currentText() != 'Manual' and self.scanCoordinates.format == 'glass slide':
@@ -3969,7 +3969,7 @@ class WellplateMultiPointWidget(QFrame):
     def set_well_coordinates(self, selected):
         self.well_selected = selected and bool(self.scanCoordinates.get_selected_wells())
 
-        if self.parent.recordTabWidget.currentWidget() == self:
+        if hasattr(self.parent, 'recordTabWidget') and self.parent.recordTabWidget.currentWidget() == self:
             if self.scanCoordinates.format == 'glass slide':
                 x = self.navigationController.x_pos_mm
                 y = self.navigationController.y_pos_mm
