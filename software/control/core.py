@@ -2633,7 +2633,7 @@ class MultiPointController(QObject):
                 else:
                     self.parent.imageDisplayTabs.setCurrentWidget(self.parent.imageArrayDisplayWindow.widget)
 
-            elif USE_NAPARI_FOR_MOSAIC_DISPLAY and self.coordinate_dict is not None and self.Nz == 1:
+            elif USE_NAPARI_FOR_MOSAIC_DISPLAY and self.coordinate_dict is not None and self.NZ == 1:
                 self.parent.imageDisplayTabs.setCurrentWidget(self.parent.napariMosaicDisplayWidget)
 
             elif USE_NAPARI_FOR_MULTIPOINT:
